@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>无双混战 - Musou Rampage</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: radial-gradient(ellipse at center, #1a0a0a 0%, #050505 100%);
+    display:flex; justify-content:center; align-items:center;
+    min-height:100vh; overflow:hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    color:#eee; user-select:none;
+  }
+  #gameContainer { position:relative; border:2px solid #500; border-radius:10px; box-shadow:0 0 60px rgba(255,50,0,0.2); }
+  canvas { display:block; border-radius:8px; cursor:crosshair; }
+
+  #hud {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    pointer-events:none; font-size:13px;
+  }
+
+  /* 左上：HP + 怒气 */
+  #hudLeft { position:absolute; top:12px; left:12px; min-width:250px; }
+  .bar-label { font-size:11px; margin-bottom:2px; font-weight:bold; }
+  #hpBar { width:240px; height:16px; background:#200; border-radius:8px; overflow:hidden; border:1px solid #400; }
+  #hpFill { height:100%; background:linear-gradient(90deg,#e22,#f60); transition:width 0.2s; }
+
+  #rageBar { width:240px; height:12px; background:#110; border-radius:6px; overflow:hidden; margin-top:4px; border:1px solid #330; }
+  #rageFill { height:100%; background:linear-gradient(90deg,#fa0,#ff0); transition:width 0.15s; }
+  #rageFill.full { animation:ragePulse 0.4s infinite alternate; }
+  @keyframes ragePulse { to { box-shadow:0 0 15px #ff0; } }
+
+  /* 连击 */
+  #comboDisplay {
+    position:absolute; top:50px; left:50%; transform:translateX(-50%);
+    text-align:center; opacity:0; transition:opacity 0.3s;
+  }
+  #comboNum { font-size:42px; font-weight:900; color:#fa0; text-shadow:0 0 20px #f00,2px 2px 0 #500; }
+  #comboText { font-size:14px; color:#fc4; text-shadow:1px 1px 0 #300; }
+  #comboTimer { width:120px; height:4px; background:#300; border-radius:2px; margin:4px auto 0; overflow:hidden; }
+  #comboTimerFill { height:100%; background:#fa0; transition:width 0.1s linear; }
+
+  /* 右上：分数波次 */
+  #hudRight { position:absolute; top:12px; right:12px; text-align:right; }
+  #scoreText { font-size:20px; font-weight:bold; color:#fc4; }
+  #waveText { font-size:13px; color:#f88; margin-top:4px; }
+  #killText { font-size:12px; color:#888; margin-top:2px; }
+
+  /* 大招提示 */
+  #ultPrompt {
+    position:absolute; bottom:80px; left:50%; transform:translateX(-50%);
+    font-size:16px; color:#ff0; text-shadow:0 0 10px #f00;
+    display:none; animation:ultBlink 0.5s infinite alternate;
+  }
+  @keyframes ultBlink { to { opacity:0.4; } }
+
+  /* 操作提示 */
+  #controls {
+    position:absolute; bottom:12px; left:12px; font-size:11px; color:#666;
+  }
+
+  /* 消息日志 */
+  #msgLog {
+    position:absolute; bottom:40px; left:12px; max-width:300px;
+  }
+  .log-msg {
+    background:rgba(20,5,5,0.7); padding:3px 8px; border-radius:4px;
+    border-left:3px solid #f44; margin-bottom:2px; font-size:12px; color:#faa;
+    animation:logFade 3s forwards;
+  }
+  @keyframes logFade { 0%{opacity:0;transform:translateX(-10px);} 10%{opacity:1;transform:translateX(0);} 80%{opacity:1;} 100%{opacity:0;} }
+
+  /* 开始画面 */
+  #startScreen {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    background:rgba(5,0,0,0.92);
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    z-index:100; text-align:center;
+  }
+  #startScreen h1 {
+    font-size:48px; color:#f30; text-shadow:0 0 30px #f00,3px 3px 0 #300;
+    margin-bottom:8px; letter-spacing:4px;
+  }
+  #startScreen .subtitle { color:#f88; font-size:14px; margin-bottom:25px; }
+  .char-select { display:flex; gap:16px; margin-bottom:20px; }
+  .char-card {
+    background:rgba(30,10,10,0.8); border:2px solid #500; border-radius:10px;
+    padding:16px 20px; cursor:pointer; transition:all 0.2s; width:140px;
+  }
+  .char-card:hover { border-color:#f40; transform:translateY(-3px); }
+  .char-card.selected { border-color:#fa0; background:rgba(50,20,0,0.8); box-shadow:0 0 20px rgba(255,160,0,0.3); }
+  .char-icon { font-size:36px; margin-bottom:6px; }
+  .char-name { font-size:16px; font-weight:bold; color:#fc4; }
+  .char-desc { font-size:10px; color:#888; margin-top:4px; }
+  .char-stats { display:flex; justify-content:space-around; margin-top:8px; font-size:10px; }
+  .stat-row { display:flex; align-items:center; gap:2px; }
+
+  .controls-hint { font-size:12px; color:#666; margin:15px 0; line-height:1.8; }
+  .ctrl-key { background:#333; padding:2px 6px; border-radius:3px; font-family:monospace; color:#fa4; margin:0 2px; }
+
+  #startBtn {
+    background:linear-gradient(135deg,#f30,#f60); color:#fff;
+    border:none; padding:14px 50px; font-size:18px; font-weight:bold;
+    border-radius:8px; cursor:pointer; letter-spacing:2px;
+    box-shadow:0 4px 20px rgba(255,50,0,0.4); transition:all 0.2s;
+  }
+  #startBtn:hover { transform:scale(1.05); box-shadow:0 6px 30px rgba(255,80,0,0.6); }
+
+  /* 游戏结束 */
+  #gameOverScreen {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    background:rgba(5,0,0,0.9);
+    display:none; flex-direction:column; justify-content:center; align-items:center;
+    z-index:100; text-align:center;
+  }
+  #gameOverScreen h2 { font-size:36px; margin-bottom:16px; }
+  #gameOverScreen .stats { font-size:16px; color:#fc4; line-height:2; margin-bottom:20px; }
+  #restartBtn {
+    background:#400; color:#fff; border:1px solid #600;
+    padding:10px 30px; font-size:16px; border-radius:6px; cursor:pointer;
+  }
+  #restartBtn:hover { background:#600; }
+
+  #screenFlash {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    pointer-events:none; opacity:0; background:#f00;
+  }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="game" width="1200" height="720"></canvas>
+
+  <div id="hud">
+    <div id="hudLeft">
+      <div class="bar-label" style="color:#f88">❤ 生命值</div>
+      <div id="hpBar"><div id="hpFill" style="width:100%"></div></div>
+      <div class="bar-label" style="color:#fa0; margin-top:6px">⚡ 怒气值</div>
+      <div id="rageBar"><div id="rageFill" style="width:0%"></div></div>
+    </div>
+
+    <div id="comboDisplay">
+      <div id="comboNum">0</div>
+      <div id="comboText">COMBO</div>
+      <div id="comboTimer"><div id="comboTimerFill" style="width:0%"></div></div>
+    </div>
+
+    <div id="hudRight">
+      <div id="scoreText">0</div>
+      <div id="waveText">第 1 波</div>
+      <div id="killText">击杀: 0</div>
+    </div>
+
+    <div id="ultPrompt">⚡ 按空格释放必杀技！</div>
+
+    <div id="msgLog"></div>
+    <div id="controls">
+      <span class="ctrl-key">WASD</span>移动
+      <span class="ctrl-key">左键</span>挥砍
+      <span class="ctrl-key">右键</span>射击
+      <span class="ctrl-key">空格</span>必杀
+      <span class="ctrl-key">Shift</span>冲刺
+      <span class="ctrl-key">R</span>装弹
+    </div>
+  </div>
+
+  <div id="screenFlash"></div>
+
+  <div id="startScreen">
+    <h1>⚔ 无双混战</h1>
+    <p class="subtitle">百人斩 · 连击爽快 · 必杀爆发</p>
+
+    <div class="char-select" id="charSelect">
+      <div class="char-card selected" data-char="warrior">
+        <div class="char-icon">🗡</div>
+        <div class="char-name">剑豪</div>
+        <div class="char-desc">近战之王·范围大</div>
+        <div class="char-stats">
+          <span>❤❤❤</span><span>⚔⚔⚔</span><span>🔫</span>
+        </div>
+      </div>
+      <div class="char-card" data-char="gunner">
+        <div class="char-icon">🔫</div>
+        <div class="char-name">枪手</div>
+        <div class="char-desc">远程压制·连射</div>
+        <div class="char-stats">
+          <span>❤❤</span><span>⚔⚔</span><span>🔫🔫🔫</span>
+        </div>
+      </div>
+      <div class="char-card" data-char="berserker">
+        <div class="char-icon">🪓</div>
+        <div class="char-name">狂战士</div>
+        <div class="char-desc">高伤高血·慢速</div>
+        <div class="char-stats">
+          <span>❤❤❤❤</span><span>⚔⚔⚔⚔</span><span>🔫</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls-hint">
+      <span class="ctrl-key">WASD</span>移动
+      <span class="ctrl-key">鼠标左键</span>近战挥砍
+      <span class="ctrl-key">鼠标右键</span>枪械射击
+      <span class="ctrl-key">空格</span>必杀技（怒气满）
+      <span class="ctrl-key">Shift</span>冲刺<br>
+      <span class="ctrl-key">R</span>装弹
+      · 连击不间断可提升伤害 · 击杀积累怒气 · 必杀清屏
+    </div>
+
+    <button id="startBtn">▶ 开战</button>
+  </div>
+
+  <div id="gameOverScreen">
+    <h2 id="gameOverTitle">💀 战败</h2>
+    <div class="stats" id="finalStats"></div>
+    <button id="restartBtn">↻ 再来一局</button>
+  </div>
+</div>
+<script src="musou.js"></script>
+</body>
+</html>

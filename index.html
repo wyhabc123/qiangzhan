@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>城市混战 2.0 - Urban Shootout</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #0a0a14;
+    display:flex; justify-content:center; align-items:center;
+    min-height:100vh; overflow:hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    color:#eee;
+  }
+  #gameContainer { position:relative; border:2px solid #222; border-radius:10px; box-shadow:0 0 50px rgba(0,120,255,0.15); }
+  canvas { display:block; border-radius:8px; cursor:crosshair; }
+
+  /* === HUD === */
+  #hud {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    pointer-events:none; font-size:13px;
+  }
+  .panel {
+    position:absolute; background:rgba(8,10,20,0.75);
+    border:1px solid rgba(80,140,255,0.15);
+    border-radius:8px; padding:8px 12px;
+    backdrop-filter: blur(4px);
+  }
+  #hudLeft { top:10px; left:10px; min-width:230px; }
+  #hudRight { top:10px; right:10px; text-align:right; min-width:200px; }
+  #squadPanel { top:10px; left:50%; transform:translateX(-50%); display:flex; gap:12px; }
+  #itemsPanel { bottom:160px; right:10px; display:flex; flex-direction:column; gap:3px; min-width:170px; }
+
+  .hp-label { font-size:11px; color:#f88; margin-bottom:2px; }
+  .hp-bar { width:200px; height:14px; background:#300; border-radius:7px; overflow:hidden; position:relative; }
+  .hp-fill { height:100%; background:linear-gradient(90deg,#e33,#f80); transition:width 0.2s; }
+  .hp-bleed { position:absolute; top:0; right:0; height:100%; width:0; background:repeating-linear-gradient(45deg,rgba(255,0,0,0.3),rgba(255,0,0,0.3) 4px,transparent 4px,transparent 8px); transition:width 0.3s; }
+
+  .armor-bar { width:200px; height:8px; background:#112; border-radius:4px; overflow:hidden; margin-top:2px; }
+  .armor-fill { height:100%; background:linear-gradient(90deg,#48f,#0af); transition:width 0.2s; }
+
+  /* Body Diagram */
+  #bodyDiagram {
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    margin-top:6px; padding:4px;
+    background:rgba(0,0,0,0.3); border-radius:6px;
+  }
+  .bp-row { display:flex; gap:2px; }
+  .bp {
+    width:22px; height:14px; border-radius:3px;
+    font-size:8px; text-align:center; line-height:14px;
+    background:#2a5; color:#fff; transition:background 0.3s;
+  }
+  .bp.warn { background:#cc4; }
+  .bp.crit { background:#c33; animation:pulse 0.5s infinite alternate; }
+  @keyframes pulse { to { opacity:0.5; } }
+
+  /* Weapons */
+  #weaponList { margin-top:6px; display:flex; flex-direction:column; gap:2px; }
+  .w-slot {
+    display:flex; align-items:center; gap:6px;
+    padding:3px 6px; border-radius:4px; font-size:11px;
+    background:rgba(255,255,255,0.04); border:1px solid transparent;
+  }
+  .w-slot.active { background:rgba(80,180,255,0.15); border-color:rgba(80,180,255,0.4); }
+  .w-slot.disabled { opacity:0.3; }
+  .w-key { background:#333; padding:1px 4px; border-radius:3px; font-family:monospace; font-size:10px; }
+
+  /* Items */
+  .item-slot {
+    display:flex; align-items:center; gap:5px;
+    padding:4px 8px; border-radius:4px; font-size:11px;
+    background:rgba(0,0,0,0.5); border-left:3px solid #fa4;
+  }
+  .item-key { background:#444; padding:1px 4px; border-radius:3px; font-family:monospace; font-size:10px; }
+  .item-count { margin-left:auto; color:#fc4; font-weight:bold; }
+
+  /* Squad */
+  .squad-m { display:flex; align-items:center; gap:4px; font-size:11px; }
+  .squad-dot { width:7px; height:7px; border-radius:50%; }
+
+  /* Minimap */
+  #minimap {
+    position:absolute; bottom:10px; right:10px;
+    width:180px; height:130px;
+    border:1px solid rgba(80,140,255,0.2); border-radius:6px;
+    background:rgba(0,0,0,0.7);
+  }
+
+  /* Messages */
+  #msgLog {
+    position:absolute; bottom:10px; left:10px;
+    width:300px; max-height:130px; overflow:hidden;
+    font-size:12px; pointer-events:none;
+  }
+  .log-msg {
+    background:rgba(0,0,0,0.5); padding:3px 8px; margin-top:2px;
+    border-radius:3px; border-left:3px solid #4af;
+    animation:fadeOut 6s forwards;
+  }
+  @keyframes fadeOut { 0%,75%{opacity:1;} 100%{opacity:0;} }
+
+  /* Interaction Prompt */
+  #interactPrompt {
+    position:absolute; bottom:160px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.8); padding:6px 16px; border-radius:6px;
+    font-size:14px; border:1px solid #4af; display:none;
+    animation:bounce 1s infinite alternate;
+  }
+  @keyframes bounce { to { transform:translateX(-50%) translateY(-3px); } }
+  #interactPrompt .key {
+    display:inline-block; background:#4af; color:#000;
+    padding:2px 8px; border-radius:4px; font-weight:bold; margin-right:4px;
+  }
+
+  /* Downed Overlay */
+  #downedOverlay {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    background:radial-gradient(circle, rgba(80,0,0,0.3), rgba(40,0,0,0.6));
+    display:none; flex-direction:column; justify-content:center; align-items:center;
+    pointer-events:none; border-radius:8px;
+  }
+  #downedOverlay h2 { color:#f44; font-size:36px; text-shadow:0 0 20px #f00; }
+  #downedOverlay p { color:#faa; font-size:16px; margin-top:8px; }
+  #downedTimer {
+    font-size:48px; color:#f80; font-weight:bold; margin-top:10px;
+    text-shadow:0 0 15px rgba(255,100,0,0.5);
+  }
+
+  /* Damage Flash */
+  #dmgFlash {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    pointer-events:none; border-radius:8px;
+    box-shadow:inset 0 0 0 rgba(255,0,0,0); transition:box-shadow 0.3s;
+  }
+
+  /* === Start Screen === */
+  #startScreen {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    background:rgba(5,8,15,0.92); display:flex; flex-direction:column;
+    justify-content:center; align-items:center; border-radius:8px; z-index:20;
+    overflow-y:auto; padding:20px;
+  }
+  #startScreen h1 {
+    font-size:38px; margin-bottom:6px;
+    background:linear-gradient(90deg,#4af,#f44,#4f8);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  #startScreen .subtitle { color:#888; margin-bottom:18px; font-size:14px; }
+
+  .section-title {
+    font-size:16px; color:#8cf; margin:14px 0 8px; text-transform:uppercase;
+    letter-spacing:2px; border-bottom:1px solid rgba(80,140,255,0.2); padding-bottom:4px;
+  }
+
+  /* Map Cards */
+  .card-grid { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .map-card, .weapon-card {
+    background:rgba(20,25,40,0.8); border:2px solid rgba(80,140,255,0.1);
+    border-radius:10px; padding:14px; cursor:pointer; transition:all 0.2s;
+    min-width:180px; max-width:220px;
+  }
+  .map-card:hover, .weapon-card:hover {
+    border-color:rgba(80,140,255,0.4); transform:translateY(-2px);
+  }
+  .map-card.selected, .weapon-card.selected {
+    border-color:#4af; background:rgba(20,40,80,0.8);
+    box-shadow:0 0 20px rgba(80,140,255,0.2);
+  }
+  .card-icon { font-size:32px; text-align:center; margin-bottom:6px; }
+  .card-name { font-size:16px; font-weight:bold; text-align:center; }
+  .card-desc { font-size:11px; color:#aaa; text-align:center; margin-top:4px; }
+  .card-info { font-size:10px; color:#668; text-align:center; margin-top:4px; }
+
+  /* Weapon stats bars */
+  .stat-row { display:flex; align-items:center; gap:4px; margin-top:3px; font-size:10px; }
+  .stat-label { width:32px; color:#88a; }
+  .stat-bar { flex:1; height:6px; background:#222; border-radius:3px; overflow:hidden; }
+  .stat-fill { height:100%; background:linear-gradient(90deg,#4f8,#4af); }
+
+  /* Controls */
+  .controls {
+    background:rgba(255,255,255,0.03); padding:14px 20px; border-radius:8px;
+    margin:14px 0; font-size:12px; line-height:1.8;
+  }
+  .controls span {
+    display:inline-block; background:#222; padding:2px 7px;
+    border-radius:4px; margin-right:5px; font-family:monospace; font-size:11px;
+  }
+  .ctrl-group { display:inline-block; margin-right:16px; }
+
+  button {
+    background:linear-gradient(135deg,#2a6,#4af); border:none; color:#fff;
+    padding:12px 40px; font-size:18px; border-radius:8px; cursor:pointer;
+    margin-top:10px; transition:transform 0.15s; font-weight:bold;
+  }
+  button:hover { transform:scale(1.05); }
+
+  /* Game Over */
+  #gameOverScreen {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.88); display:none; flex-direction:column;
+    justify-content:center; align-items:center; border-radius:8px; z-index:20;
+  }
+  #gameOverScreen h1 { font-size:48px; margin-bottom:16px; }
+  #gameOverScreen p { font-size:16px; margin:4px 0; }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="game" width="1200" height="720"></canvas>
+  <div id="dmgFlash"></div>
+
+  <div id="hud">
+    <div class="panel" id="hudLeft">
+      <div class="hp-label">❤ 生命值 <span id="hpText" style="float:right">120/120</span></div>
+      <div class="hp-bar">
+        <div class="hp-fill" id="hpFill" style="width:100%"></div>
+        <div class="hp-bleed" id="hpBleed"></div>
+      </div>
+      <div style="font-size:11px;color:#48f;margin-top:3px">🛡 护甲 <span id="armorText" style="float:right">0</span></div>
+      <div class="armor-bar"><div class="armor-fill" id="armorFill" style="width:0%"></div></div>
+
+      <div id="bodyDiagram">
+        <div class="bp-row"><div class="bp" id="bp-head">头</div></div>
+        <div class="bp-row">
+          <div class="bp" id="bp-leftArm">左臂</div>
+          <div class="bp" id="bp-torso">胸</div>
+          <div class="bp" id="bp-rightArm">右臂</div>
+        </div>
+        <div class="bp-row">
+          <div class="bp" id="bp-leftLeg">左腿</div>
+          <div class="bp" id="bp-rightLeg">右腿</div>
+        </div>
+      </div>
+
+      <div id="weaponList"></div>
+      <div id="dodgePanel" style="margin-top:6px;padding:4px 6px;background:rgba(0,40,60,0.5);border-radius:4px;border:1px solid rgba(80,200,255,0.2)">
+        <div style="font-size:10px;color:#4cf;margin-bottom:2px">💨 闪避充能</div>
+        <div id="dodgeSlots" style="display:flex;gap:3px"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="hudRight">
+      <div id="scoreText" style="font-size:13px"></div>
+      <div id="waveText" style="font-size:11px;color:#8cf;margin-top:4px"></div>
+      <div id="moneyText" style="font-size:12px;color:#fc4;margin-top:4px"></div>
+      <div id="bleedText" style="font-size:11px;color:#f66;margin-top:4px;display:none">🩸 流血中！按 B 包扎</div>
+      <div id="objectivePanel" style="margin-top:8px;padding:6px 8px;background:rgba(20,40,80,0.55);border-radius:5px;border:1px solid rgba(100,160,255,0.25)">
+        <div id="objTitle" style="font-size:11px;color:#8cf;font-weight:bold"></div>
+        <div style="margin-top:3px;height:8px;background:#000a;border-radius:4px;overflow:hidden">
+          <div id="objFill" style="height:100%;width:0%;background:linear-gradient(90deg,#4af,#4fa);transition:width .2s"></div>
+        </div>
+        <div id="objHint" style="font-size:10px;color:#adf;margin-top:3px"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="squadPanel"></div>
+
+    <div class="panel" id="itemsPanel"></div>
+
+    <div id="interactPrompt"><span class="key">E</span><span id="interactText">互动</span></div>
+
+    <div id="msgLog"></div>
+    <canvas id="minimap" width="180" height="130"></canvas>
+  </div>
+
+  <div id="downedOverlay">
+    <h2>💀 你倒下了！</h2>
+    <p>等待队友救援，或按 Q 使用医疗包自救</p>
+    <div id="downedTimer">45</div>
+  </div>
+
+  <div id="startScreen">
+    <h1>🎯 城市混战 2.0</h1>
+    <p class="subtitle">身体部位伤害 · 流血系统 · 急救站 · 队友救援 · 三方混战</p>
+
+    <div class="section-title">🗺️ 选择地图</div>
+    <div class="card-grid" id="mapGrid"></div>
+
+    <div class="section-title">🔫 选择主武器</div>
+    <div class="card-grid" id="weaponGrid"></div>
+
+    <div class="section-title">🎮 游戏模式</div>
+    <div class="card-grid" id="modeGrid"></div>
+
+    <div class="controls">
+      <div><span class="ctrl-group"><span>WASD</span>移动</span><span class="ctrl-group"><span>鼠标</span>瞄准</span><span class="ctrl-group"><span>左键</span>射击</span><span class="ctrl-group"><span>R</span>装弹</span></div>
+      <div><span class="ctrl-group"><span>1-5</span>切换武器</span><span class="ctrl-group"><span>Q</span>医疗包</span><span class="ctrl-group"><span>B</span>绷带(止血)</span><span class="ctrl-group"><span>E</span>互动</span></div>
+      <div><span class="ctrl-group"><span>F</span>能量饮料</span><span class="ctrl-group"><span>G</span>烟雾弹</span><span class="ctrl-group"><span>Shift</span>冲刺</span><span class="ctrl-group"><span>空格</span>翻滚闪避</span></div>
+    </div>
+    <button onclick="startGame()">▶ 开始战斗</button>
+  </div>
+
+  <div id="gameOverScreen">
+    <h1 id="goTitle"></h1>
+    <p id="goStats"></p>
+    <button onclick="location.reload()">🔄 再战一局</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
