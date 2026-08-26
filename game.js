@@ -77,6 +77,41 @@ const MAPS = {
     enemySpawns:[[4200,200],[4100,400],[4300,300],[4000,600],[4150,500]],
     gangSpawns:[[3900,2600],[4100,2700],[3800,2800],[4050,2550]],
     playerSpawn:[200,1500]
+  },
+  desert: {
+    name:'沙漠据点', icon:'🏜', desc:'沙墙环绕·开阔狙击战',
+    info:'4600×3200 | 专家', w:4600, h:3200,
+    enemySpawns:[[4400,200],[4300,500],[4500,400],[4100,700],[4350,300]],
+    gangSpawns:[[4200,2800],[4400,2900],[3900,3000],[4150,2750]],
+    playerSpawn:[200,1600]
+  },
+  snow: {
+    name:'雪地基地', icon:'❄', desc:'冰原掩体少·远距离交火',
+    info:'4200×3000 | 困难', w:4200, h:3000,
+    enemySpawns:[[4000,200],[3900,400],[4100,300],[3700,600],[3950,500]],
+    gangSpawns:[[3800,2600],[4000,2700],[3700,2800],[3900,2550]],
+    playerSpawn:[200,1500]
+  },
+  jungle: {
+    name:'丛林营地', icon:'🌴', desc:'密林遮蔽·伏击近战',
+    info:'3800×2600 | 困难', w:3800, h:2600,
+    enemySpawns:[[3600,200],[3500,400],[3700,300],[3300,600],[3550,500]],
+    gangSpawns:[[3300,2200],[3500,2300],[3200,2400],[3450,2150]],
+    playerSpawn:[200,1300]
+  },
+  metro: {
+    name:'地铁隧道', icon:'🚇', desc:'狭窄通道·贴脸混战',
+    info:'3200×2000 | 中等', w:3200, h:2000,
+    enemySpawns:[[3000,200],[2900,400],[3100,300],[2700,600],[2950,500]],
+    gangSpawns:[[2800,1600],[3000,1700],[2600,1800],[2850,1550]],
+    playerSpawn:[200,1000]
+  },
+  rooftop: {
+    name:'屋顶天台', icon:'🏙', desc:'高楼屋顶·边缘战斗',
+    info:'3000×2000 | 中等', w:3000, h:2000,
+    enemySpawns:[[2800,200],[2700,400],[2900,300],[2500,600],[2750,500]],
+    gangSpawns:[[2600,1600],[2800,1700],[2400,1800],[2650,1550]],
+    playerSpawn:[200,1000]
   }
 };
 
@@ -1290,7 +1325,7 @@ function buildMap(mapType) {
     game.ent.devices.push({x:500,y:1000,type:'first_aid'});
     game.ent.barrels.push({x:700,y:900},{x:1400,y:700},{x:2200,y:900},{x:2900,y:1000});
   }
-  else { // industrial
+  else if (mapType === 'industrial') { // industrial
     // 集装箱排列
     const containerPositions = [];
     for (let row=0; row<5; row++) {
@@ -1318,6 +1353,166 @@ function buildMap(mapType) {
     game.ent.devices.push({x:600,y:2200,type:'first_aid'});
     game.ent.devices.push({x:3000,y:500,type:'ammo_crate'});
     game.ent.barrels.push({x:900,y:800},{x:1700,y:1000},{x:2400,y:1500},{x:3200,y:800},{x:1500,y:2200});
+  }
+  else if (mapType === 'desert') {
+    // 沙墙围栏
+    const walls = [
+      [60,60,500,40],[700,60,400,40],[1300,60,500,40],[2000,60,400,40],[2600,60,500,40],[3300,60,400,40],[3900,60,500,40],
+      [60,H-100,500,40],[700,H-100,400,40],[1300,H-100,500,40],[2000,H-100,400,40],[2600,H-100,500,40],[3300,H-100,400,40],[3900,H-100,500,40],
+      [60,500,40,300],[60,1000,40,400],[60,1800,40,400],[60,2400,40,300],
+      [W-100,500,40,300],[W-100,1000,40,400],[W-100,1800,40,400],[W-100,2400,40,300]
+    ];
+    for (const [x,y,w,h] of walls) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#c4a06a'});
+    // 沙包掩体
+    for (const [x,y] of [[400,800],[800,1200],[1200,600],[1600,1000],[2000,1400],
+      [2400,900],[2800,1300],[3200,800],[3600,1200],[4000,1600],
+      [600,2000],[1000,2400],[1400,1800],[1800,2200],[2200,2600],
+      [2600,2000],[3000,2400],[3400,1800],[3800,2200],[4100,2600]])
+      C.push({type:'crate',x,y,w:50,h:50,sightBlock:true,providesCover:true,color:'#d4a86a'});
+    // 废弃车辆
+    for (const c of [[500,400,90,45],[1400,1600,90,45],[2200,800,90,45],[3100,2000,90,45],[3800,1000,90,45]])
+      C.push({type:'car',x:c[0],y:c[1],w:c[2],h:c[3],sightBlock:true,providesCover:true,color:'#8a7a5a'});
+    // 望塔
+    for (const [x,y] of [[1000,300],[2500,2700],[3800,1500],[1500,2500]])
+      C.push({type:'wall',x,y,w:60,h:60,sightBlock:true,providesCover:true,color:'#a08a4a'});
+    // 医疗站
+    game.ent.devices.push({x:4000,y:2400,type:'first_aid'});
+    game.ent.devices.push({x:400,y:2000,type:'first_aid'});
+    game.ent.devices.push({x:2400,y:1600,type:'first_aid'});
+    game.ent.devices.push({x:1200,y:800,type:'ammo_crate'});
+    game.ent.devices.push({x:3400,y:600,type:'first_aid'});
+    game.ent.devices.push({x:2000,y:2400,type:'turret'});
+    game.ent.devices.push({x:800,y:1400,type:'first_aid'});
+    game.ent.devices.push({x:3600,y:2000,type:'ammo_crate'});
+    game.ent.barrels.push({x:700,y:1000},{x:1800,y:600},{x:2600,y:1200},{x:3500,y:900},{x:1500,y:2000},{x:3900,y:1800});
+  }
+  else if (mapType === 'snow') {
+    // 冰墙
+    const walls = [
+      [60,60,400,40],[600,60,500,40],[1300,60,400,40],[1900,60,500,40],[2600,60,400,40],[3200,60,500,40],[3900,60,250,40],
+      [60,H-100,400,40],[600,H-100,500,40],[1300,H-100,400,40],[1900,H-100,500,40],[2600,H-100,400,40],[3200,H-100,500,40],[3900,H-100,250,40],
+      [60,400,40,300],[60,900,40,400],[60,1500,40,400],[60,2100,40,400],
+      [W-100,400,40,300],[W-100,900,40,400],[W-100,1500,40,400],[W-100,2100,40,400]
+    ];
+    for (const [x,y,w,h] of walls) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#a8c8d8'});
+    // 雪堆掩体
+    for (const [x,y] of [[400,700],[800,1000],[1200,600],[1600,900],[2000,1200],
+      [2400,700],[2800,1000],[3200,600],[3600,900],[3900,1200],
+      [600,1800],[1000,2200],[1400,1600],[1800,2000],[2200,2400],
+      [2600,1800],[3000,2200],[3400,1600],[3700,2000]])
+      C.push({type:'crate',x,y,w:45,h:45,sightBlock:true,providesCover:true,color:'#d8e8f0'});
+    // 废弃装备箱
+    for (const c of [[500,500,90,45],[1800,1400,90,45],[3000,800,90,45],[3700,1800,90,45]])
+      C.push({type:'car',x:c[0],y:c[1],w:c[2],h:c[3],sightBlock:true,providesCover:true,color:'#688'});
+    // 医疗站
+    game.ent.devices.push({x:3800,y:2400,type:'first_aid'});
+    game.ent.devices.push({x:400,y:1800,type:'first_aid'});
+    game.ent.devices.push({x:2200,y:1400,type:'first_aid'});
+    game.ent.devices.push({x:1000,y:700,type:'ammo_crate'});
+    game.ent.devices.push({x:3200,y:1800,type:'first_aid'});
+    game.ent.devices.push({x:1800,y:2400,type:'turret'});
+    game.ent.devices.push({x:700,y:1200,type:'first_aid'});
+    game.ent.devices.push({x:3400,y:600,type:'ammo_crate'});
+    game.ent.barrels.push({x:600,y:900},{x:1700,y:700},{x:2500,y:1100},{x:3300,y:800},{x:1500,y:1800},{x:3600,y:1500});
+  }
+  else if (mapType === 'jungle') {
+    // 密林边界
+    const walls = [
+      [60,60,400,40],[600,60,500,40],[1300,60,400,40],[1900,60,500,40],[2600,60,400,40],[3200,60,500,40],
+      [60,H-100,400,40],[600,H-100,500,40],[1300,H-100,400,40],[1900,H-100,500,40],[2600,H-100,400,40],[3200,H-100,500,40],
+      [60,500,40,300],[60,1100,40,400],[60,1800,40,400],
+      [W-100,500,40,300],[W-100,1100,40,400],[W-100,1800,40,400]
+    ];
+    for (const [x,y,w,h] of walls) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#2a4a2a'});
+    // 大树（粗壮）
+    for (const [x,y] of [[400,600],[800,900],[1200,500],[1600,800],[2000,1100],
+      [2400,600],[2800,900],[3200,500],[3400,1200],
+      [600,1600],[1000,2000],[1400,1400],[1800,1800],[2200,2200],
+      [2600,1600],[3000,2000],[3300,1400]])
+      C.push({type:'wall',x,y,w:70,h:70,sightBlock:true,providesCover:true,color:'#1a3a1a'});
+    // 灌木丛（小掩体）
+    for (const [x,y] of [[300,800],[700,1100],[1100,700],[1500,1000],[1900,1300],
+      [2300,800],[2700,1100],[3100,700],[3300,1000],
+      [500,1800],[900,2100],[1300,1600],[1700,2000],[2100,2300],
+      [2500,1800],[2900,2100]])
+      C.push({type:'crate',x,y,w:35,h:35,sightBlock:true,providesCover:true,color:'#3a5a3a'});
+    // 废弃吉普
+    for (const c of [[500,400,90,45],[1800,1200,90,45],[3000,800,90,45],[3400,1800,90,45]])
+      C.push({type:'car',x:c[0],y:c[1],w:c[2],h:c[3],sightBlock:true,providesCover:true,color:'#5a4a3a'});
+    // 医疗站
+    game.ent.devices.push({x:3400,y:2200,type:'first_aid'});
+    game.ent.devices.push({x:400,y:1700,type:'first_aid'});
+    game.ent.devices.push({x:2000,y:1300,type:'first_aid'});
+    game.ent.devices.push({x:1200,y:600,type:'ammo_crate'});
+    game.ent.devices.push({x:2800,y:1800,type:'first_aid'});
+    game.ent.devices.push({x:1600,y:2200,type:'turret'});
+    game.ent.devices.push({x:700,y:1300,type:'first_aid'});
+    game.ent.devices.push({x:3100,y:1000,type:'ammo_crate'});
+    game.ent.barrels.push({x:600,y:700},{x:1700,y:900},{x:2500,y:700},{x:3200,y:1000},{x:1500,y:1700},{x:3300,y:1600});
+  }
+  else if (mapType === 'metro') {
+    // 隧道外墙
+    C.push({type:'wall',x:0,y:0,w:W,h:25,sightBlock:true,providesCover:true,color:'#555'});
+    C.push({type:'wall',x:0,y:H-25,w:W,h:25,sightBlock:true,providesCover:true,color:'#555'});
+    C.push({type:'wall',x:0,y:0,w:25,h:H,sightBlock:true,providesCover:true,color:'#555'});
+    C.push({type:'wall',x:W-25,y:0,w:25,h:H,sightBlock:true,providesCover:true,color:'#555'});
+    // 站台分隔
+    const pillars = [
+      [200,100,40,200],[200,400,40,200],[200,700,40,200],[200,1000,40,200],[200,1300,40,200],[200,1600,40,300],
+      [800,100,40,150],[800,350,40,150],[800,600,40,150],[800,850,40,150],[800,1100,40,150],[800,1350,40,150],[800,1600,40,300],
+      [1400,100,40,200],[1400,400,40,200],[1400,700,40,200],[1400,1000,40,200],[1400,1300,40,200],[1400,1600,40,300],
+      [2000,100,40,150],[2000,350,40,150],[2000,600,40,150],[2000,850,40,150],[2000,1100,40,150],[2000,1350,40,150],[2000,1600,40,300],
+      [2600,100,40,200],[2600,400,40,200],[2600,700,40,200],[2600,1000,40,200],[2600,1300,40,200],[2600,1600,40,300]
+    ];
+    for (const [x,y,w,h] of pillars) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#666'});
+    // 翻倒车厢
+    for (const [x,y] of [[500,500],[1100,900],[1700,500],[2300,900],[2800,500]])
+      C.push({type:'wall',x,y,w:140,h:60,sightBlock:true,providesCover:true,color:'#4a3a2a'});
+    // 闸机/障碍
+    for (const [x,y] of [[400,1000],[1000,1300],[1600,1000],[2200,1300],[2700,1000]])
+      C.push({type:'crate',x,y,w:40,h:40,sightBlock:true,providesCover:true,color:'#888'});
+    // 医疗站
+    game.ent.devices.push({x:2800,y:1700,type:'first_aid'});
+    game.ent.devices.push({x:300,y:500,type:'first_aid'});
+    game.ent.devices.push({x:1600,y:1300,type:'first_aid'});
+    game.ent.devices.push({x:1000,y:600,type:'ammo_crate'});
+    game.ent.devices.push({x:2200,y:800,type:'first_aid'});
+    game.ent.devices.push({x:2400,y:1500,type:'turret'});
+    game.ent.devices.push({x:600,y:1700,type:'first_aid'});
+    game.ent.devices.push({x:2600,y:400,type:'ammo_crate'});
+    game.ent.barrels.push({x:700,y:800},{x:1500,y:700},{x:2300,y:600},{x:2700,y:1200},{x:1200,y:1500});
+  }
+  else if (mapType === 'rooftop') {
+    // 天台边缘护栏
+    C.push({type:'wall',x:0,y:0,w:W,h:20,sightBlock:true,providesCover:true,color:'#666'});
+    C.push({type:'wall',x:0,y:H-20,w:W,h:20,sightBlock:true,providesCover:true,color:'#666'});
+    C.push({type:'wall',x:0,y:0,w:20,h:H,sightBlock:true,providesCover:true,color:'#666'});
+    C.push({type:'wall',x:W-20,y:0,w:20,h:H,sightBlock:true,providesCover:true,color:'#666'});
+    // 空调机组
+    const acs = [
+      [200,200,100,80],[500,400,100,80],[800,200,100,80],[1100,400,100,80],
+      [1500,200,100,80],[1800,400,100,80],[2100,200,100,80],[2400,400,100,80],
+      [200,800,100,80],[500,1000,100,80],[800,800,100,80],[1100,1000,100,80],
+      [1500,800,100,80],[1800,1000,100,80],[2100,800,100,80],[2400,1000,100,80],
+      [200,1400,100,80],[800,1400,100,80],[1500,1400,100,80],[2200,1400,100,80]
+    ];
+    for (const [x,y,w,h] of acs) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#7a7a8a'});
+    // 水箱
+    for (const [x,y] of [[400,600],[1200,600],[2000,600],[600,1200],[1800,1200],[2400,600]])
+      C.push({type:'wall',x,y,w:80,h:80,sightBlock:true,providesCover:true,color:'#5a5a6a'});
+    // 天台设施
+    for (const [x,y] of [[700,300],[1300,900],[1900,300],[2300,1100],[300,1100],[1700,1500]])
+      C.push({type:'crate',x,y,w:40,h:40,sightBlock:true,providesCover:true,color:'#666'});
+    // 医疗站
+    game.ent.devices.push({x:2600,y:1700,type:'first_aid'});
+    game.ent.devices.push({x:300,y:300,type:'first_aid'});
+    game.ent.devices.push({x:1500,y:900,type:'first_aid'});
+    game.ent.devices.push({x:900,y:600,type:'ammo_crate'});
+    game.ent.devices.push({x:2000,y:1300,type:'first_aid'});
+    game.ent.devices.push({x:2200,y:600,type:'turret'});
+    game.ent.devices.push({x:500,y:1500,type:'first_aid'});
+    game.ent.devices.push({x:2400,y:1000,type:'ammo_crate'});
+    game.ent.barrels.push({x:600,y:500},{x:1400,y:700},{x:2000,y:900},{x:2500,y:1300},{x:1000,y:1300});
   }
 
   // 拾取物
