@@ -79,21 +79,21 @@ const MAPS = {
     playerSpawn:[200,1500]
   },
   desert: {
-    name:'沙漠据点', icon:'🏜', desc:'沙墙环绕·开阔狙击战',
+    name:'沙漠据点', icon:'🏜', desc:'中央堡垒·开阔狙击·极少掩体',
     info:'4600×3200 | 专家', w:4600, h:3200,
     enemySpawns:[[4400,200],[4300,500],[4500,400],[4100,700],[4350,300]],
     gangSpawns:[[4200,2800],[4400,2900],[3900,3000],[4150,2750]],
     playerSpawn:[200,1600]
   },
   snow: {
-    name:'雪地基地', icon:'❄', desc:'冰原掩体少·远距离交火',
+    name:'雪地基地', icon:'❄', desc:'中央冰湖·四角研究站·冰墙隔断',
     info:'4200×3000 | 困难', w:4200, h:3000,
     enemySpawns:[[4000,200],[3900,400],[4100,300],[3700,600],[3950,500]],
     gangSpawns:[[3800,2600],[4000,2700],[3700,2800],[3900,2550]],
     playerSpawn:[200,1500]
   },
   jungle: {
-    name:'丛林营地', icon:'🌴', desc:'密林遮蔽·伏击近战',
+    name:'丛林营地', icon:'🌴', desc:'密林小径·河流穿越·伏击近战',
     info:'3800×2600 | 困难', w:3800, h:2600,
     enemySpawns:[[3600,200],[3500,400],[3700,300],[3300,600],[3550,500]],
     gangSpawns:[[3300,2200],[3500,2300],[3200,2400],[3450,2150]],
@@ -1355,100 +1355,163 @@ function buildMap(mapType) {
     game.ent.barrels.push({x:900,y:800},{x:1700,y:1000},{x:2400,y:1500},{x:3200,y:800},{x:1500,y:2200});
   }
   else if (mapType === 'desert') {
-    // 沙墙围栏
-    const walls = [
-      [60,60,500,40],[700,60,400,40],[1300,60,500,40],[2000,60,400,40],[2600,60,500,40],[3300,60,400,40],[3900,60,500,40],
-      [60,H-100,500,40],[700,H-100,400,40],[1300,H-100,500,40],[2000,H-100,400,40],[2600,H-100,500,40],[3300,H-100,400,40],[3900,H-100,500,40],
-      [60,500,40,300],[60,1000,40,400],[60,1800,40,400],[60,2400,40,300],
-      [W-100,500,40,300],[W-100,1000,40,400],[W-100,1800,40,400],[W-100,2400,40,300]
+    // ═══ 中央堡垒（4面围墙+入口） ═══
+    const cx=W/2, cy=H/2;
+    const fortW=500, fortH=400;
+    C.push({type:'wall',x:cx-fortW/2,y:cy-fortH/2,w:fortW,h:30,sightBlock:true,providesCover:true,color:'#a08050'});
+    C.push({type:'wall',x:cx-fortW/2,y:cy+fortH/2-30,w:200,h:30,sightBlock:true,providesCover:true,color:'#a08050'});
+    C.push({type:'wall',x:cx+50,y:cy+fortH/2-30,w:200,h:30,sightBlock:true,providesCover:true,color:'#a08050'});
+    C.push({type:'wall',x:cx-fortW/2,y:cy-fortH/2,w:30,h:fortH,sightBlock:true,providesCover:true,color:'#a08050'});
+    C.push({type:'wall',x:cx+fortW/2-30,y:cy-fortH/2,w:30,h:fortH,sightBlock:true,providesCover:true,color:'#a08050'});
+    // 堡垒内沙包
+    C.push({type:'crate',x:cx-80,y:cy-40,w:45,h:45,sightBlock:true,providesCover:true,color:'#c4a06a'});
+    C.push({type:'crate',x:cx+40,y:cy-40,w:45,h:45,sightBlock:true,providesCover:true,color:'#c4a06a'});
+    C.push({type:'crate',x:cx-20,y:cy+60,w:45,h:45,sightBlock:true,providesCover:true,color:'#c4a06a'});
+    // ═══ 大型岩石（开阔地带仅有的掩体） ═══
+    const rocks = [
+      [800,600,90,70],[3800,700,100,80],[700,2400,80,90],[3900,2500,90,80],
+      [1400,400,70,60],[3200,400,80,70],[1300,2700,60,80],[3300,2700,70,60],
+      [2200,2200,60,50],[2500,800,50,60]
     ];
-    for (const [x,y,w,h] of walls) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#c4a06a'});
-    // 沙包掩体
-    for (const [x,y] of [[400,800],[800,1200],[1200,600],[1600,1000],[2000,1400],
-      [2400,900],[2800,1300],[3200,800],[3600,1200],[4000,1600],
-      [600,2000],[1000,2400],[1400,1800],[1800,2200],[2200,2600],
-      [2600,2000],[3000,2400],[3400,1800],[3800,2200],[4100,2600]])
-      C.push({type:'crate',x,y,w:50,h:50,sightBlock:true,providesCover:true,color:'#d4a86a'});
-    // 废弃车辆
-    for (const c of [[500,400,90,45],[1400,1600,90,45],[2200,800,90,45],[3100,2000,90,45],[3800,1000,90,45]])
-      C.push({type:'car',x:c[0],y:c[1],w:c[2],h:c[3],sightBlock:true,providesCover:true,color:'#8a7a5a'});
-    // 望塔
-    for (const [x,y] of [[1000,300],[2500,2700],[3800,1500],[1500,2500]])
-      C.push({type:'wall',x,y,w:60,h:60,sightBlock:true,providesCover:true,color:'#a08a4a'});
-    // 医疗站
+    for (const [x,y,w,h] of rocks) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#8a7050'});
+    // ═══ 沙丘（长条低矮墙，遮挡视线但不阻挡移动） ═══
+    const dunes = [
+      [200,1200,600,25],[2200,1800,700,25],[3500,1400,650,25],
+      [1500,2500,550,25],[3000,2200,600,25]
+    ];
+    for (const [x,y,w,h] of dunes) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#b09060'});
+    // ═══ 边界围栏（仅薄墙标记边界） ═══
+    C.push({type:'wall',x:0,y:0,w:W,h:15,sightBlock:false,providesCover:true,color:'#706040'});
+    C.push({type:'wall',x:0,y:H-15,w:W,h:15,sightBlock:false,providesCover:true,color:'#706040'});
+    C.push({type:'wall',x:0,y:0,w:15,h:H,sightBlock:false,providesCover:true,color:'#706040'});
+    C.push({type:'wall',x:W-15,y:0,w:15,h:H,sightBlock:false,providesCover:true,color:'#706040'});
+    // ═══ 废弃车辆（极少） ═══
+    C.push({type:'car',x:600,y:1800,w:90,h:45,sightBlock:true,providesCover:true,color:'#8a7a5a'});
+    C.push({type:'car',x:3700,y:1100,w:90,h:45,sightBlock:true,providesCover:true,color:'#8a7a5a'});
+    // ═══ 望塔 ═══
+    C.push({type:'wall',x:300,y:300,w:50,h:50,sightBlock:true,providesCover:true,color:'#a08a4a'});
+    C.push({type:'wall',x:W-350,y:H-350,w:50,h:50,sightBlock:true,providesCover:true,color:'#a08a4a'});
+    // 医疗站+装置
+    game.ent.devices.push({x:cx+80,y:cy+120,type:'first_aid'});
     game.ent.devices.push({x:4000,y:2400,type:'first_aid'});
     game.ent.devices.push({x:400,y:2000,type:'first_aid'});
-    game.ent.devices.push({x:2400,y:1600,type:'first_aid'});
     game.ent.devices.push({x:1200,y:800,type:'ammo_crate'});
-    game.ent.devices.push({x:3400,y:600,type:'first_aid'});
+    game.ent.devices.push({x:3400,y:600,type:'ammo_crate'});
     game.ent.devices.push({x:2000,y:2400,type:'turret'});
-    game.ent.devices.push({x:800,y:1400,type:'first_aid'});
-    game.ent.devices.push({x:3600,y:2000,type:'ammo_crate'});
-    game.ent.barrels.push({x:700,y:1000},{x:1800,y:600},{x:2600,y:1200},{x:3500,y:900},{x:1500,y:2000},{x:3900,y:1800});
+    game.ent.devices.push({x:3600,y:2000,type:'first_aid'});
+    game.ent.barrels.push({x:cx-100,y:cy-100},{x:1800,y:600},{x:3500,y:900},{x:1500,y:2000},{x:3900,y:1800});
   }
   else if (mapType === 'snow') {
-    // 冰墙
-    const walls = [
-      [60,60,400,40],[600,60,500,40],[1300,60,400,40],[1900,60,500,40],[2600,60,400,40],[3200,60,500,40],[3900,60,250,40],
-      [60,H-100,400,40],[600,H-100,500,40],[1300,H-100,400,40],[1900,H-100,500,40],[2600,H-100,400,40],[3200,H-100,500,40],[3900,H-100,250,40],
-      [60,400,40,300],[60,900,40,400],[60,1500,40,400],[60,2100,40,400],
-      [W-100,400,40,300],[W-100,900,40,400],[W-100,1500,40,400],[W-100,2100,40,400]
+    // ═══ 中央冰湖（开阔无掩体区域） ═══
+    // （不放置任何cover，仅靠地板色差呈现）
+    // ═══ 边缘建筑群（4座研究站） ═══
+    const buildings = [
+      [200,200,300,200],[200,400,80,200],   // 左上研究站
+      [W-500,200,300,200],[W-220,400,80,200], // 右上
+      [200,H-400,300,200],[200,H-580,80,200], // 左下
+      [W-500,H-400,300,200],[W-220,H-580,80,200] // 右下
     ];
-    for (const [x,y,w,h] of walls) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#a8c8d8'});
-    // 雪堆掩体
-    for (const [x,y] of [[400,700],[800,1000],[1200,600],[1600,900],[2000,1200],
-      [2400,700],[2800,1000],[3200,600],[3600,900],[3900,1200],
-      [600,1800],[1000,2200],[1400,1600],[1800,2000],[2200,2400],
-      [2600,1800],[3000,2200],[3400,1600],[3700,2000]])
-      C.push({type:'crate',x,y,w:45,h:45,sightBlock:true,providesCover:true,color:'#d8e8f0'});
-    // 废弃装备箱
-    for (const c of [[500,500,90,45],[1800,1400,90,45],[3000,800,90,45],[3700,1800,90,45]])
-      C.push({type:'car',x:c[0],y:c[1],w:c[2],h:c[3],sightBlock:true,providesCover:true,color:'#688'});
-    // 医疗站
-    game.ent.devices.push({x:3800,y:2400,type:'first_aid'});
-    game.ent.devices.push({x:400,y:1800,type:'first_aid'});
-    game.ent.devices.push({x:2200,y:1400,type:'first_aid'});
-    game.ent.devices.push({x:1000,y:700,type:'ammo_crate'});
-    game.ent.devices.push({x:3200,y:1800,type:'first_aid'});
-    game.ent.devices.push({x:1800,y:2400,type:'turret'});
-    game.ent.devices.push({x:700,y:1200,type:'first_aid'});
-    game.ent.devices.push({x:3400,y:600,type:'ammo_crate'});
-    game.ent.barrels.push({x:600,y:900},{x:1700,y:700},{x:2500,y:1100},{x:3300,y:800},{x:1500,y:1800},{x:3600,y:1500});
+    for (const [x,y,w,h] of buildings) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#8a9ab0'});
+    // ═══ 冰墙隔断（将地图分成4个象限，留通道） ═══
+    const iceWalls = [
+      // 横向冰墙（中间留缺口）
+      [W/2-800,H/2-20,800,40],[W/2+100,H/2-20,800,40],
+      // 纵向冰墙（中间留缺口）
+      [W/2-20,200,40,700],[W/2-20,H/2+100,40,700],
+      // 对角线冰墙（增加视线遮挡）
+      [W/2-400,H/2-300,200,30],[W/2+200,H/2+200,200,30]
+    ];
+    for (const [x,y,w,h] of iceWalls) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#a8c8d8'});
+    // ═══ 雪堆掩体（极少，只在建筑附近） ═══
+    const snowMounds = [
+      [560,350],[560,700],[W-650,350],[W-650,700],
+      [560,H-500],[560,H-250],[W-650,H-500],[W-650,H-250],
+      [800,1000],[W-900,1000],[800,H-1100],[W-900,H-1100]
+    ];
+    for (const [x,y] of snowMounds) C.push({type:'crate',x,y,w:40,h:40,sightBlock:true,providesCover:true,color:'#d8e8f0'});
+    // ═══ 废弃雪地车 ═══
+    C.push({type:'car',x:900,y:500,w:90,h:45,sightBlock:true,providesCover:true,color:'#688'});
+    C.push({type:'car',x:W-990,y:H-550,w:90,h:45,sightBlock:true,providesCover:true,color:'#688'});
+    // ═══ 边界围栏 ═══
+    C.push({type:'wall',x:0,y:0,w:W,h:15,sightBlock:false,providesCover:true,color:'#6a8a9a'});
+    C.push({type:'wall',x:0,y:H-15,w:W,h:15,sightBlock:false,providesCover:true,color:'#6a8a9a'});
+    C.push({type:'wall',x:0,y:0,w:15,h:H,sightBlock:false,providesCover:true,color:'#6a8a9a'});
+    C.push({type:'wall',x:W-15,y:0,w:15,h:H,sightBlock:false,providesCover:true,color:'#6a8a9a'});
+    // 医疗站+装置
+    game.ent.devices.push({x:300,y:250,type:'first_aid'});
+    game.ent.devices.push({x:W-300,y:250,type:'first_aid'});
+    game.ent.devices.push({x:300,y:H-250,type:'first_aid'});
+    game.ent.devices.push({x:W-300,y:H-250,type:'first_aid'});
+    game.ent.devices.push({x:700,y:900,type:'ammo_crate'});
+    game.ent.devices.push({x:W-700,y:H-900,type:'ammo_crate'});
+    game.ent.devices.push({x:W/2+150,y:H/2-150,type:'turret'});
+    game.ent.devices.push({x:W/2-250,y:H/2+150,type:'first_aid'});
+    game.ent.barrels.push({x:550,y:600},{x:W-600,y:600},{x:550,y:H-600},{x:W-600,y:H-600},{x:W/2,y:H/2-300});
   }
   else if (mapType === 'jungle') {
-    // 密林边界
-    const walls = [
-      [60,60,400,40],[600,60,500,40],[1300,60,400,40],[1900,60,500,40],[2600,60,400,40],[3200,60,500,40],
-      [60,H-100,400,40],[600,H-100,500,40],[1300,H-100,400,40],[1900,H-100,500,40],[2600,H-100,400,40],[3200,H-100,500,40],
-      [60,500,40,300],[60,1100,40,400],[60,1800,40,400],
-      [W-100,500,40,300],[W-100,1100,40,400],[W-100,1800,40,400]
+    // ═══ 河流（横穿地图中间，用矮墙模拟河岸） ═══
+    // 河流在 y=H/2±50 区域，留3座桥
+    const riverY = H/2;
+    // 河岸（上下两侧，留3个缺口当桥）
+    C.push({type:'wall',x:0,y:riverY-60,w:W/2-250,h:15,sightBlock:false,providesCover:false,color:'#1a3a2a'});
+    C.push({type:'wall',x:W/2+250,y:riverY-60,w:W/2-250,h:15,sightBlock:false,providesCover:false,color:'#1a3a2a'});
+    C.push({type:'wall',x:0,y:riverY+50,w:W/3-200,h:15,sightBlock:false,providesCover:false,color:'#1a3a2a'});
+    C.push({type:'wall',x:W/3+200,y:riverY+50,w:W/3-200,h:15,sightBlock:false,providesCover:false,color:'#1a3a2a'});
+    C.push({type:'wall',x:W*2/3+200,y:riverY+50,w:W/3-200,h:15,sightBlock:false,providesCover:false,color:'#1a3a2a'});
+    // ═══ 密集大树（形成狭窄小径） ═══
+    // 上半区：紧密排列的大树
+    const treesTop = [
+      [150,300],[350,500],[150,700],[350,300],[550,600],[150,1000],[400,900],
+      [700,300],[900,500],[700,700],[900,1000],[550,900],[800,350],
+      [1100,300],[1300,500],[1100,700],[1300,300],[1100,1000],[1350,900],
+      [1600,300],[1800,500],[1600,700],[1800,300],[1600,1000],[1850,900],
+      [2100,300],[2300,500],[2100,700],[2300,300],[2100,1000],[2350,900],
+      [2600,300],[2800,500],[2600,700],[2800,300],[2600,1000],[2850,900],
+      [3100,300],[3300,500],[3100,700],[3300,300],[3100,1000]
     ];
-    for (const [x,y,w,h] of walls) C.push({type:'wall',x,y,w,h,sightBlock:true,providesCover:true,color:'#2a4a2a'});
-    // 大树（粗壮）
-    for (const [x,y] of [[400,600],[800,900],[1200,500],[1600,800],[2000,1100],
-      [2400,600],[2800,900],[3200,500],[3400,1200],
-      [600,1600],[1000,2000],[1400,1400],[1800,1800],[2200,2200],
-      [2600,1600],[3000,2000],[3300,1400]])
-      C.push({type:'wall',x,y,w:70,h:70,sightBlock:true,providesCover:true,color:'#1a3a1a'});
-    // 灌木丛（小掩体）
-    for (const [x,y] of [[300,800],[700,1100],[1100,700],[1500,1000],[1900,1300],
-      [2300,800],[2700,1100],[3100,700],[3300,1000],
-      [500,1800],[900,2100],[1300,1600],[1700,2000],[2100,2300],
-      [2500,1800],[2900,2100]])
-      C.push({type:'crate',x,y,w:35,h:35,sightBlock:true,providesCover:true,color:'#3a5a3a'});
-    // 废弃吉普
-    for (const c of [[500,400,90,45],[1800,1200,90,45],[3000,800,90,45],[3400,1800,90,45]])
-      C.push({type:'car',x:c[0],y:c[1],w:c[2],h:c[3],sightBlock:true,providesCover:true,color:'#5a4a3a'});
-    // 医疗站
-    game.ent.devices.push({x:3400,y:2200,type:'first_aid'});
-    game.ent.devices.push({x:400,y:1700,type:'first_aid'});
-    game.ent.devices.push({x:2000,y:1300,type:'first_aid'});
-    game.ent.devices.push({x:1200,y:600,type:'ammo_crate'});
-    game.ent.devices.push({x:2800,y:1800,type:'first_aid'});
-    game.ent.devices.push({x:1600,y:2200,type:'turret'});
-    game.ent.devices.push({x:700,y:1300,type:'first_aid'});
-    game.ent.devices.push({x:3100,y:1000,type:'ammo_crate'});
-    game.ent.barrels.push({x:600,y:700},{x:1700,y:900},{x:2500,y:700},{x:3200,y:1000},{x:1500,y:1700},{x:3300,y:1600});
+    for (const [x,y] of treesTop) C.push({type:'wall',x,y,w:65,h:65,sightBlock:true,providesCover:true,color:'#1a3a1a'});
+    // 下半区：更稀疏但有灌木丛
+    const treesBot = [
+      [200,H-300],[400,H-500],[200,H-700],[500,H-300],[700,H-500],
+      [1000,H-300],[1200,H-500],[1000,H-700],[1300,H-300],
+      [1600,H-300],[1800,H-500],[1600,H-700],[1900,H-300],
+      [2200,H-300],[2400,H-500],[2200,H-700],[2500,H-300],
+      [2800,H-300],[3000,H-500],[2800,H-700],[3100,H-300],
+      [3300,H-300],[3300,H-600]
+    ];
+    for (const [x,y] of treesBot) C.push({type:'wall',x,y,w:65,h:65,sightBlock:true,providesCover:true,color:'#1a3a1a'});
+    // ═══ 灌木丛（小掩体，填缝） ═══
+    const bushes = [
+      [250,450],[650,450],[1050,450],[1450,450],[1850,450],[2250,450],[2650,450],[3050,450],
+      [250,850],[650,850],[1050,850],[1450,850],[1850,850],[2250,850],[2650,850],
+      [300,H-400],[700,H-400],[1100,H-400],[1500,H-400],[1900,H-400],[2300,H-400],[2700,H-400],[3100,H-400],
+      [400,H-600],[800,H-600],[1200,H-600],[1600,H-600],[2000,H-600],[2400,H-600],[2800,H-600]
+    ];
+    for (const [x,y] of bushes) C.push({type:'crate',x,y,w:30,h:30,sightBlock:true,providesCover:true,color:'#2a4a2a'});
+    // ═══ 营地据点（2个） ═══
+    // 营地A：左下
+    C.push({type:'wall',x:300,y:H-250,w:120,h:15,sightBlock:true,providesCover:true,color:'#3a2a1a'});
+    C.push({type:'wall',x:300,y:H-250,w:15,h:100,sightBlock:true,providesCover:true,color:'#3a2a1a'});
+    C.push({type:'wall',x:405,y:H-250,w:15,h:100,sightBlock:true,providesCover:true,color:'#3a2a1a'});
+    // 营地B：右上
+    C.push({type:'wall',x:W-450,y:250,w:120,h:15,sightBlock:true,providesCover:true,color:'#3a2a1a'});
+    C.push({type:'wall',x:W-450,y:250,w:15,h:100,sightBlock:true,providesCover:true,color:'#3a2a1a'});
+    C.push({type:'wall',x:W-345,y:250,w:15,h:100,sightBlock:true,providesCover:true,color:'#3a2a1a'});
+    // ═══ 边界密林墙 ═══
+    C.push({type:'wall',x:0,y:0,w:W,h:20,sightBlock:true,providesCover:true,color:'#0a1a0a'});
+    C.push({type:'wall',x:0,y:H-20,w:W,h:20,sightBlock:true,providesCover:true,color:'#0a1a0a'});
+    C.push({type:'wall',x:0,y:0,w:20,h:H,sightBlock:true,providesCover:true,color:'#0a1a0a'});
+    C.push({type:'wall',x:W-20,y:0,w:20,h:H,sightBlock:true,providesCover:true,color:'#0a1a0a'});
+    // 医疗站+装置
+    game.ent.devices.push({x:340,y:H-200,type:'first_aid'});
+    game.ent.devices.push({x:W-400,y:300,type:'first_aid'});
+    game.ent.devices.push({x:W/2-100,y:riverY-100,type:'first_aid'});
+    game.ent.devices.push({x:1000,y:600,type:'ammo_crate'});
+    game.ent.devices.push({x:W-1200,y:600,type:'ammo_crate'});
+    game.ent.devices.push({x:W/2+100,y:riverY+100,type:'turret'});
+    game.ent.devices.push({x:1500,y:H-600,type:'first_aid'});
+    game.ent.devices.push({x:W-800,y:H-600,type:'first_aid'});
+    game.ent.barrels.push({x:350,y:H-220},{x:W-400,y:280},{x:W/2,y:riverY-50},{x:1500,y:600},{x:W-1500,y:600});
   }
   else if (mapType === 'metro') {
     // 隧道外墙
@@ -1881,10 +1944,21 @@ function render() {
   drawMinimap();
 }
 
+const FLOOR_COLORS = {
+  city:     { base:'#3a3d42', grid:'rgba(255,255,255,0.025)' },
+  warehouse:{ base:'#2e2b26', grid:'rgba(180,160,100,0.03)' },
+  industrial:{base:'#2c2e30', grid:'rgba(255,255,255,0.02)' },
+  desert:   { base:'#5a4e36', grid:'rgba(255,220,160,0.035)' },
+  snow:     { base:'#3a4a55', grid:'rgba(200,230,255,0.05)' },
+  jungle:   { base:'#1e3020', grid:'rgba(100,200,100,0.04)' },
+  metro:    { base:'#2a2a2e', grid:'rgba(255,255,255,0.02)' },
+  rooftop:  { base:'#3a383e', grid:'rgba(200,200,255,0.03)' }
+};
 function drawFloor() {
-  ctx.fillStyle = '#303238'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  const fc = FLOOR_COLORS[game.selectedMap] || FLOOR_COLORS.city;
+  ctx.fillStyle = fc.base; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   const ox = -game.camera.x % 80, oy = -game.camera.y % 80;
-  ctx.strokeStyle = 'rgba(255,255,255,0.02)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = fc.grid; ctx.lineWidth = 1;
   for (let x=ox; x<VIEW_W; x+=80) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,VIEW_H); ctx.stroke(); }
   for (let y=oy; y<VIEW_H; y+=80) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(VIEW_W,y); ctx.stroke(); }
   // 血迹
